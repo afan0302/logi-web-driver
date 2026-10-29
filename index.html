@@ -97,7 +97,7 @@ const F = {
   BATTERY_STATUS: 0x1000, BATTERY_VOLTAGE: 0x1001, UNIFIED_BATTERY: 0x1004,
   CHANGE_HOST: 0x1814, REPROG_V4: 0x1b04,
   SMART_SHIFT: 0x2110, SMART_SHIFT_ENH: 0x2111, HIRES_WHEEL: 0x2121,
-  ADJ_DPI: 0x2201, REPORT_RATE: 0x8060, EXT_REPORT_RATE: 0x8061, ONBOARD_PROFILES: 0x8100,
+  ADJ_DPI: 0x2201, EXT_DPI: 0x2202, REPORT_RATE: 0x8060, EXT_REPORT_RATE: 0x8061, ONBOARD_PROFILES: 0x8100,
 };
 const FEATURE_NAMES = {
   0x0000:'Root',0x0001:'FeatureSet',0x0002:'FeatureInfo',0x0003:'DeviceFwVersion',0x0004:'DeviceUnitId',
@@ -494,10 +494,11 @@ async function batteryPanel(d) {
     h('div', { class: 'mut', style: 'margin-top:6px' }, extra));
 }
 
-function parseDpiList(r) {
+// DPI 清單：每個值 2 bytes，0 結尾；0xE000|step 代表「從前一個值到下一個值，每 step 一格」
+function parseDpiList(bytes) {
   const vals = [];
-  for (let i = 1; i + 1 < r.length; i += 2) {
-    const v = (r[i] << 8) | r[i + 1];
+  for (let i = 0; i + 1 < bytes.length; i += 2) {
+    const v = (bytes[i] << 8) | bytes[i + 1];
     if (!v) break;
     vals.push(v);
   }
@@ -513,17 +514,70 @@ function parseDpiList(r) {
   return list;
 }
 
+// 0x2201 AdjustableDPI 與 0x2202 ExtendedAdjustableDPI 共用同一個介面
+function dpiApi(d) {
+  if (d.has(F.EXT_DPI)) {
+    const caps = {};
+    return {
+      fid: F.EXT_DPI,
+      sensors: async () => (await d.call(F.EXT_DPI, 0))[0] || 1,
+      async list(s) {
+        const c = await d.call(F.EXT_DPI, 1, [s]);
+        caps[s] = { y: !!(c[2] & 1), lod: !!(c[2] & 2) };
+        let bytes = [];
+        for (let page = 0; page < 32; page++) {
+          const r = await d.call(F.EXT_DPI, 2, [s, 0, page]);
+          bytes.push(...r.slice(3));
+          if (bytes.length >= 2 && !bytes[bytes.length - 1] && !bytes[bytes.length - 2]) break;
+          if (r.slice(3).every(b => !b)) break;
+        }
+        return parseDpiList(bytes);
+      },
+      async get(s) {
+        const r = await d.call(F.EXT_DPI, 5, [s]);
+        const x = (r[1] << 8) | r[2], defX = (r[3] << 8) | r[4];
+        const y = (r[5] << 8) | r[6];
+        return { cur: x || defX, def: defX, y, lod: caps[s]?.lod ? r[9] : null };
+      },
+      async set(s, v, lod) {
+        const st = await this.get(s);
+        const y = caps[s]?.y ? v : 0;
+        const l = caps[s]?.lod ? (lod ?? st.lod ?? 0) : 0;
+        await d.call(F.EXT_DPI, 6, [s, v >> 8, v & 0xff, y >> 8, y & 0xff, l]);
+      },
+      hasLod: (s) => !!caps[s]?.lod,
+    };
+  }
+  if (d.has(F.ADJ_DPI)) {
+    return {
+      fid: F.ADJ_DPI,
+      sensors: async () => (await d.call(F.ADJ_DPI, 0))[0] || 1,
+      list: async (s) => parseDpiList((await d.call(F.ADJ_DPI, 1, [s])).slice(1)),
+      async get(s) {
+        const r = await d.call(F.ADJ_DPI, 2, [s]);
+        const cur = (r[1] << 8) | r[2], def = (r[3] << 8) | r[4];
+        return { cur: cur || def, def, lod: null };
+      },
+      set: (s, v) => d.call(F.ADJ_DPI, 3, [s, v >> 8, v & 0xff]),
+      hasLod: () => false,
+    };
+  }
+  return null;
+}
+
+const LOD_NAMES = ['低', '中', '高'];
+
 async function dpiPanel(d) {
-  if (!d.has(F.ADJ_DPI)) return null;
-  const sensors = (await d.call(F.ADJ_DPI, 0))[0] || 1;
+  const api = dpiApi(d);
+  if (!api) return null;
+  const sensors = await api.sensors();
   let sensor = 0;
   const body = h('div');
   const sensorSel = sensors > 1 ? h('select', { onchange: (e) => { sensor = +e.target.value; load(); } },
     Array.from({ length: sensors }, (_, i) => h('option', { value: i }, `感測器 ${i + 1}`))) : null;
   async function load() {
-    const list = parseDpiList(await d.call(F.ADJ_DPI, 1, [sensor]));
-    const r = await d.call(F.ADJ_DPI, 2, [sensor]);
-    const cur = (r[1] << 8) | r[2], def = (r[3] << 8) | r[4];
+    const list = await api.list(sensor);
+    const { cur, def, lod } = await api.get(sensor);
     const steps = list.length ? list : Array.from({ length: 160 }, (_, i) => 100 + i * 50);
     const nearestIdx = (v) => steps.reduce((bi, x, i) => Math.abs(x - v) < Math.abs(steps[bi] - v) ? i : bi, 0);
     const big = h('div', { class: 'big' }, cur, h('span', { class: 'mut' }, ' DPI'));
@@ -531,14 +585,27 @@ async function dpiPanel(d) {
     const range = h('input', { type: 'range', min: 0, max: steps.length - 1, value: nearestIdx(cur),
       oninput: () => { num.value = steps[range.value]; } });
     num.onchange = () => { range.value = nearestIdx(+num.value); num.value = steps[range.value]; };
+    const refresh = async () => {
+      const now = await api.get(sensor);
+      big.firstChild.textContent = now.cur; num.value = now.cur; range.value = nearestIdx(now.cur);
+      if (lodSel && now.lod != null) lodSel.value = now.lod;
+      return now;
+    };
     const apply = async (v) => {
       v = steps[nearestIdx(v)];
-      await d.call(F.ADJ_DPI, 3, [sensor, v >> 8, v & 0xff]);
-      const rr = await d.call(F.ADJ_DPI, 2, [sensor]);
-      const now = (rr[1] << 8) | rr[2];
-      big.firstChild.textContent = now; num.value = now; range.value = nearestIdx(now);
-      log(`DPI 已設為 ${now}`, 'l-ok');
+      await api.set(sensor, v);
+      const now = await refresh();
+      log(`DPI 已設為 ${now.cur}`, 'l-ok');
     };
+    const lodSel = api.hasLod(sensor) ? h('select', null, LOD_NAMES.map((n, i) => h('option', { value: i }, n))) : null;
+    if (lodSel) {
+      lodSel.value = lod ?? 1;
+      lodSel.onchange = () => guard(lodSel, async () => {
+        await api.set(sensor, +num.value, +lodSel.value);
+        await refresh();
+        log(`離地高度 (LOD) 已設為 ${LOD_NAMES[lodSel.value]}`, 'l-ok');
+      });
+    }
     const presets = [400, 800, 1000, 1600, 2400, 3200, 6400].filter(p => p >= steps[0] && p <= steps[steps.length - 1]);
     const applyBtn = h('button', { class: 'primary', onclick: (e) => guard(e.target, () => apply(+num.value)) }, '套用');
     body.replaceChildren(
@@ -547,10 +614,11 @@ async function dpiPanel(d) {
       h('div', { class: 'row' }, range),
       h('div', { class: 'row' }, num, applyBtn,
         def ? h('button', { onclick: (e) => guard(e.target, () => apply(def)) }, '恢復預設') : null),
-      h('div', { class: 'row' }, presets.map(p => h('button', { onclick: (e) => guard(e.target, () => apply(p)) }, p))));
+      h('div', { class: 'row' }, presets.map(p => h('button', { onclick: (e) => guard(e.target, () => apply(p)) }, p))),
+      lodSel ? h('div', { class: 'row' }, '離地高度 (LOD)', lodSel) : null);
   }
   await load();
-  return card('DPI 靈敏度', F.ADJ_DPI, sensorSel, body);
+  return card('DPI 靈敏度', api.fid, sensorSel, body);
 }
 
 async function reportRatePanel(d) {
