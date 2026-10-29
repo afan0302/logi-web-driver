@@ -4,83 +4,193 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Logi Web 設定工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
+/* 版面：頂列 → 首頁裝置卡片；進入裝置後為「圖示欄 + 側欄 + 主舞台」三欄，參考遊戲周邊軟體的深色控制台 */
 :root{
-  --bg:#f5f6f8;--card:#fff;--fg:#1b2130;--mut:#667085;--line:#e3e6eb;
-  --acc:#0aa89a;--acc-weak:#e3f6f4;--acc-fg:#fff;--err:#d92d20;--ok:#12a46a;--warn:#c77a06;--code:#f1f3f6;
-}
-@media (prefers-color-scheme: dark){
-  :root{--bg:#0f1217;--card:#171b22;--fg:#e5e8ee;--mut:#98a2b3;--line:#2a303a;
-    --acc:#2cc9b9;--acc-weak:#12302d;--acc-fg:#06201d;--code:#10141a;}
+  color-scheme: dark;
+  --bg:#08090b; --panel:#1d1f23; --panel-2:#26292e; --raise:#30343a; --line:#2f3238;
+  --fg:#eef0f3; --mut:#8d939c; --dim:#5d636b;
+  --acc:#2a9df4; --acc-ink:#04131f; --acc-weak:#12263a;
+  --ok:#2fbf71; --warn:#e3a008; --err:#f0524a;
+  --display:"Barlow Semi Condensed","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:12px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif}
-header{padding:20px 16px 8px;max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
-header h1{font-size:20px;margin:0}
-header p{margin:2px 0 0;color:var(--mut);font-size:13px}
-main{max-width:1100px;margin:0 auto;padding:8px 16px 40px}
-button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:7px 14px;border-radius:8px;cursor:pointer}
-button:hover{border-color:var(--acc)}
-button.primary{background:var(--acc);color:var(--acc-fg);border-color:var(--acc);font-weight:600}
-button.on{background:var(--acc-weak);border-color:var(--acc);color:var(--fg);font-weight:600}
-button:disabled{opacity:.5;cursor:not-allowed}
-input,select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
-input[type=range]{width:100%;padding:0;accent-color:var(--acc)}
-input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
-.card h2{font-size:15px;margin:0 0 10px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.card h2 small{color:var(--mut);font-weight:400;font-size:12px;font-family:ui-monospace,monospace}
-.wide{grid-column:1/-1}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
-.mut{color:var(--mut);font-size:13px}
-.big{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
-.kv dt{color:var(--mut)} .kv dd{margin:0;word-break:break-word}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}
-th{color:var(--mut);font-weight:500}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.tablewrap{max-height:320px;overflow:auto}
-#log{background:var(--code);border-radius:8px;padding:8px;height:220px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;margin:0}
-.l-err{color:var(--err)} .l-ok{color:var(--ok)} .l-tx{color:var(--mut)} .l-rx{color:var(--acc)} .l-ev{color:var(--warn)}
-.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
-.bar{height:10px;background:var(--code);border-radius:5px;overflow:hidden}
-.bar>i{display:block;height:100%;background:var(--ok)}
-.notice{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 var(--body);display:flex;flex-direction:column}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* 頂列 */
+.top{display:flex;align-items:center;gap:16px;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font:700 20px/1 var(--display);letter-spacing:.06em;display:flex;align-items:center;gap:10px}
+.brand i{width:28px;height:28px;border-radius:8px;background:var(--acc);display:grid;place-items:center;color:var(--acc-ink);font-style:normal;font-size:15px}
+.top .sp{flex:1}
+.status{color:var(--mut);font-size:13px}
+.btn{border:1px solid var(--line);background:var(--panel);padding:8px 16px;border-radius:10px;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--acc)}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 12px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid transparent;background:transparent;display:grid;place-items:center;color:var(--fg)}
+.icon-btn:hover{background:var(--panel)}
+.icon-btn svg{width:22px;height:22px}
+
+#app{flex:1;min-height:0;display:flex;flex-direction:column}
+#notices{padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+.notice{max-width:760px;margin:16px auto 0;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:12px 14px;font-size:14px}
 .notice.err{border-left-color:var(--err)}
-.empty{color:var(--mut);text-align:center;padding:40px 10px}
-.status{font-size:13px;color:var(--mut)}
-code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:12.5px}
+code{font-family:var(--mono);background:var(--panel-2);padding:1px 6px;border-radius:5px;font-size:12.5px}
+
+/* 首頁 */
+.home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+.home-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
+.devcard{width:300px;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 24px 18px;text-align:left;display:flex;flex-direction:column;gap:6px;transition:transform .15s,border-color .15s}
+.devcard:hover{border-color:var(--acc);transform:translateY(-2px)}
+.devcard h3{margin:0;font:700 24px/1.15 var(--display);letter-spacing:.01em;text-wrap:balance}
+.devcard .meta{display:flex;align-items:center;gap:10px;color:var(--mut);font:600 15px var(--display)}
+.devcard .meta svg{width:22px;height:12px}
+.devcard .art{height:250px;display:grid;place-items:center}
+.devcard .art svg{height:100%;max-width:100%}
+.devcard .foot{display:flex;justify-content:space-between;align-items:center;color:var(--mut);font-size:12.5px}
+.empty-hero{max-width:520px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty-hero h2{margin:0;font:700 30px/1.2 var(--display);text-wrap:balance}
+.empty-hero p{margin:0;color:var(--mut)}
+.empty-hero .art{height:220px;opacity:.55}
+.empty-hero .art svg{height:100%}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{font-size:12.5px;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:3px 10px}
+
+/* 裝置頁 */
+.devhead{display:flex;align-items:center;gap:14px;padding:16px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));flex-wrap:wrap}
+.devhead h1{margin:0;font:700 clamp(24px,4vw,36px)/1.1 var(--display);letter-spacing:.01em;flex:1;min-width:0;text-wrap:balance}
+.batt{display:inline-flex;align-items:center;gap:6px;font:600 15px var(--display);color:var(--mut)}
+.batt svg{width:22px;height:12px}
+.devbody{flex:1;min-height:0;display:grid;grid-template-columns:72px 340px minmax(0,1fr);gap:16px;padding:0 max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.rail{display:flex;flex-direction:column;gap:10px;align-items:center;padding-top:4px}
+.rail .sp{flex:1}
+.rail button{width:56px;height:56px;border-radius:14px;border:0;background:transparent;color:var(--fg);display:grid;place-items:center;position:relative}
+.rail button:hover{background:var(--panel)}
+.rail button.on{background:var(--acc);color:#fff}
+.rail button svg{width:26px;height:26px}
+.rail button span{position:absolute;left:64px;white-space:nowrap;background:var(--raise);padding:3px 8px;border-radius:6px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5}
+.rail button:hover span{opacity:1}
+.side{background:var(--panel);border-radius:16px;padding:22px 22px;overflow:auto;min-width:0}
+.side h2{margin:0 0 6px;font:700 26px/1.2 var(--display)}
+.side p{color:var(--mut);font-size:14px;margin:8px 0}
+.side .group{border-top:1px solid var(--line);margin-top:16px;padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.side .label{font-size:13px;font-weight:700;letter-spacing:.04em}
+.stage{min-width:0;overflow:auto;padding:4px 4px 8px}
+.stage.full{grid-column:2/-1}
+.stage h2{margin:0;font:700 24px/1.2 var(--display)}
+.stagehead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.readout{color:var(--mut);font-size:14px}
+.readout b{font:700 26px var(--display);color:var(--fg);font-variant-numeric:tabular-nums;margin:0 4px}
+.cols{display:grid;grid-template-columns:6px 34px minmax(80px,1fr) 120px 64px;gap:14px;align-items:center;padding:0 14px;color:var(--mut);font-size:13px}
+.stagerow{display:grid;grid-template-columns:6px 34px minmax(80px,1fr) 120px 64px;gap:14px;align-items:center;padding:14px;border-radius:12px;margin:6px 0;transition:background .15s}
+.stagerow.active{background:var(--acc-weak)}
+.stagerow .bar{width:4px;height:40px;border-radius:2px;background:var(--raise)}
+.stagerow.active .bar{background:#fff}
+.stagerow .num{font:600 20px var(--display);color:var(--mut);background:none;border:0;padding:0;text-align:left}
+.stagerow.active .num{color:var(--fg)}
+.stagerow.off .num,.stagerow.off input[type=number]{color:var(--dim)}
+input[type=range]{width:100%;accent-color:var(--acc);background:transparent}
+.stagerow.off input[type=range]{accent-color:var(--dim)}
+input[type=number],select,.field{background:transparent;border:1px solid var(--raise);border-radius:10px;padding:9px 12px;font:600 18px var(--display);width:100%;font-variant-numeric:tabular-nums}
+select{font:500 15px var(--body);background:var(--panel)}
+select option{background:var(--panel)}
+.sw{position:relative;display:inline-block;width:52px;height:30px}
+.sw input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.sw i{position:absolute;inset:0;border-radius:99px;background:var(--raise);transition:background .15s;pointer-events:none}
+.sw i::after{content:"";position:absolute;width:22px;height:22px;left:4px;top:4px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked+i{background:var(--acc)}
+.sw input:checked+i::after{transform:translateX(22px)}
+.sw input:focus-visible+i{outline:2px solid var(--acc);outline-offset:2px}
+.sw input:disabled+i{opacity:.5}
+.subsec{margin-top:26px;display:flex;flex-direction:column;gap:10px;max-width:360px}
+.subsec .label{font-size:16px;font-weight:700}
+.hint{color:var(--mut);font-size:13px}
+.warnbox{border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 9%,transparent);border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:8px}
+.okbox{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;font-size:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px}
+.kv dt{color:var(--mut)} .kv dd{margin:0;word-break:break-word}
+.btnlist{display:flex;flex-direction:column;gap:2px}
+.btnlist button{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;border:0;background:transparent;text-align:left}
+.btnlist button:hover,.btnlist button.on{background:var(--panel-2)}
+.btnlist small{color:var(--mut)}
+.mousebox{display:grid;place-items:center;padding:10px 0}
+.mousebox svg{width:100%;max-width:640px;height:auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{background:var(--panel);border-radius:14px;padding:16px 18px;min-width:0}
+.card h3{margin:0 0 10px;font:700 18px var(--display);display:flex;justify-content:space-between;gap:8px}
+.card h3 small{font:400 12px var(--mono);color:var(--dim)}
+.card.wide{grid-column:1/-1}
+.big{font:700 34px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.meter{height:8px;border-radius:4px;background:var(--raise);overflow:hidden;margin-top:8px}
+.meter i{display:block;height:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--panel-2);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;color:var(--mut)}
+.seg button.on{background:var(--raise);color:var(--fg);font-weight:700}
+.tablewrap{max-height:340px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:500;position:sticky;top:0;background:var(--panel)}
+.mono{font-family:var(--mono)}
+.tag{display:inline-block;font-size:11.5px;border-radius:6px;padding:1px 7px;background:var(--acc-weak);color:var(--acc)}
+
+/* 紀錄抽屜 */
+.drawer{border-top:1px solid var(--line);background:var(--panel)}
+.drawer header{display:flex;align-items:center;gap:12px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));font-size:13px;color:var(--mut)}
+.drawer header .sp{flex:1}
+#log{margin:0;height:200px;overflow:auto;padding:4px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));font:12px/1.5 var(--mono);white-space:pre-wrap;word-break:break-all}
+.l-err{color:var(--err)} .l-ok{color:var(--ok)} .l-tx{color:var(--dim)} .l-rx{color:var(--acc)} .l-ev{color:var(--warn)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;box-shadow:0 8px 30px #0008;max-width:calc(100% - 32px)}
+.toast.err{border-color:var(--err)}
+
+@media (max-width: 980px){
+  .devbody{grid-template-columns:1fr;gap:12px}
+  .rail{flex-direction:row;justify-content:flex-start;overflow-x:auto;padding:0}
+  .rail .sp{display:none}
+  .rail button span{display:none}
+  .side{max-height:none;overflow:visible}
+  .devbody{flex:none}
+  #app{flex:none}
+  .stage.full{grid-column:auto}
+}
+@media (max-width: 560px){
+  .cols{display:none}
+  .top .status{display:none}
+  .stagerow{grid-template-columns:4px 26px 1fr 58px;gap:10px;padding:12px 10px}
+  .stagerow input[type=range]{grid-column:2/-1;grid-row:2}
+  .stagerow .bar{grid-row:1/3;height:100%}
+}
 </style>
 </head>
 <body>
-<header>
-  <div>
-    <h1>Logi Web 設定工具</h1>
-    <p>透過 WebHID + HID++ 2.0 直接在瀏覽器調整羅技裝置，不需安裝 G HUB / Options+</p>
-  </div>
-  <div class="row" style="margin:0">
-    <span class="status" id="status">未連線</span>
-    <button class="primary" id="btnConnect">連線裝置</button>
-    <button id="btnDisconnect" disabled>中斷</button>
-  </div>
-</header>
-<main>
-  <div id="notices"></div>
-  <div class="tabs" id="tabs"></div>
-  <div class="grid" id="panels">
-    <div class="card wide empty" id="placeholder">
-      按下「連線裝置」，在瀏覽器視窗中選擇你的羅技滑鼠、鍵盤或接收器（Unifying / Bolt / Lightspeed）。
-    </div>
-  </div>
-  <div class="grid" style="margin-top:14px">
-    <div class="card wide">
-      <h2>通訊紀錄 <span class="row" style="margin:0"><label class="mut"><input type="checkbox" id="chkRaw"> 顯示原始封包</label><button id="btnClearLog">清除</button></span></h2>
-      <pre id="log"></pre>
-    </div>
-  </div>
-</main>
+<div class="top">
+  <div class="brand"><i>L</i>LOGI WEB</div>
+  <span class="sp"></span>
+  <span class="status" id="status">未連線</span>
+  <button class="btn primary" id="btnConnect">連線裝置</button>
+  <button class="btn ghost" id="btnDisconnect" disabled>中斷</button>
+  <button class="icon-btn" id="btnLog" title="通訊紀錄" aria-label="通訊紀錄"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg></button>
+</div>
+<div id="notices"></div>
+<div id="app"></div>
+<div class="drawer" id="drawer" hidden>
+  <header><b style="color:var(--fg)">通訊紀錄</b><span class="sp"></span><label><input type="checkbox" id="chkRaw"> 顯示原始封包</label><button class="btn sm" id="btnClearLog">清除</button></header>
+  <pre id="log"></pre>
+</div>
 <script>
 'use strict';
 // ───────────────────────── 常數 ─────────────────────────
@@ -283,218 +393,7 @@ class LogiDevice {
   }
 }
 
-// ───────────────────────── 應用程式狀態 ─────────────────────────
-let hidDev = null, transport = null, devices = [], current = null;
 
-$('#btnConnect').onclick = connect;
-$('#btnDisconnect').onclick = disconnect;
-$('#btnClearLog').onclick = () => { logEl.textContent = ''; };
-
-function checkSupport() {
-  if (!('hid' in navigator)) {
-    notice('此瀏覽器不支援 <b>WebHID</b>。請使用桌面版 <b>Chrome / Edge / Opera</b>（版本 89 以上），Firefox 與 Safari 目前不支援。', 'err');
-    $('#btnConnect').disabled = true;
-    return false;
-  }
-  if (!window.isSecureContext) {
-    notice('WebHID 只能在安全環境使用：請用 <code>https://</code> 或 <code>http://localhost</code> 開啟此頁面。', 'err');
-    $('#btnConnect').disabled = true;
-    return false;
-  }
-  return true;
-}
-
-async function connect() {
-  try {
-    const list = await navigator.hid.requestDevice({ filters: HID_FILTERS });
-    if (!list.length) return;
-    await openHid(list);
-  } catch (e) {
-    log('連線失敗：' + e.message, 'l-err');
-  }
-}
-
-function pickHidpp(list) {
-  return list.find(d => d.collections.some(c => c.usagePage === 0xff00 || c.usagePage === 0xff43)) || list[0];
-}
-
-async function openHid(list) {
-  await disconnect();
-  hidDev = pickHidpp(list);
-  setStatus('開啟中…');
-  try {
-    if (!hidDev.opened) await hidDev.open();
-  } catch (e) {
-    log(`無法開啟裝置：${e.message}`, 'l-err');
-    notice('無法開啟裝置。若 G HUB / Options+ / Solaar 正在執行，請先關閉；Linux 需設定 hidraw 權限（見 README）。', 'err');
-    setStatus('未連線');
-    hidDev = null;
-    return;
-  }
-  transport = new HidppTransport(hidDev);
-  transport.listeners.add(onNotification);
-  $('#btnDisconnect').disabled = false;
-  log(`已開啟：${hidDev.productName}（VID ${hx(hidDev.vendorId, 4)} / PID ${hx(hidDev.productId, 4)}）`, 'l-ok');
-  await discover();
-}
-
-async function disconnect() {
-  if (transport) transport.close();
-  if (hidDev?.opened) { try { await hidDev.close(); } catch {} }
-  hidDev = null; transport = null; devices = []; current = null;
-  $('#tabs').textContent = '';
-  $('#panels').replaceChildren(h('div', { class: 'card wide empty' }, '已中斷連線。'));
-  $('#btnDisconnect').disabled = true;
-  setStatus('未連線');
-}
-
-navigator.hid?.addEventListener('disconnect', (e) => {
-  if (e.device === hidDev) { log('裝置已拔除', 'l-err'); disconnect(); }
-});
-
-async function probe(index, timeout) {
-  try {
-    const r = await transport.request(index, 0, 1, [0, 0, 0x5a], timeout);
-    const proto = r[0] + r[1] / 10;
-    if (r[0] < 2) { log(`索引 ${hx(index)}：HID++ ${proto}（不支援的舊協定）`, 'l-err'); return null; }
-    return new LogiDevice(transport, index, `${r[0]}.${r[1]}`);
-  } catch (e) {
-    if (e.kind === 'hidpp10' && index === 0xff) log('此為接收器，開始掃描已配對裝置…');
-    else if (index !== 0xff) log(`槽位 ${index}：${e.message}`);
-    return null;
-  }
-}
-
-async function discover() {
-  setStatus('偵測裝置中…');
-  devices = [];
-  const looksLikeReceiver = RECEIVER_PIDS.has(hidDev.productId) || /receiver|unifying|bolt|lightspeed/i.test(hidDev.productName);
-  if (!looksLikeReceiver) {
-    const d = await probe(0xff, 1500);
-    if (d) devices.push(d);
-  }
-  if (!devices.length) {
-    for (let i = 1; i <= 6; i++) {
-      const d = await probe(i, 700);
-      if (d) devices.push(d);
-    }
-  }
-  for (const d of devices) {
-    try { await d.loadFeatures(); await d.readName(); }
-    catch (e) { log(`讀取 ${d.name} 失敗：${e.message}`, 'l-err'); }
-  }
-  renderTabs();
-  if (!devices.length) {
-    $('#panels').replaceChildren(h('div', { class: 'card wide empty' },
-      '找不到可用的 HID++ 2.0 裝置。若使用無線接收器，請先動一下滑鼠或按鍵喚醒裝置，再按「重新掃描」。',
-      h('div', { class: 'row', style: 'justify-content:center' }, h('button', { onclick: discover }, '重新掃描'))));
-    setStatus(hidDev.productName);
-    return;
-  }
-  selectDevice(devices[0]);
-}
-
-function renderTabs() {
-  const tabs = $('#tabs');
-  tabs.textContent = '';
-  if (devices.length < 2 && !(devices[0] && devices[0].index !== 0xff)) return;
-  for (const d of devices) {
-    tabs.append(h('button', { class: d === current ? 'on' : '', onclick: () => selectDevice(d) },
-      d.index === 0xff ? d.name : `${d.index}. ${d.name}`));
-  }
-  tabs.append(h('button', { onclick: discover, title: '重新掃描接收器槽位' }, '↻ 重新掃描'));
-}
-
-function onNotification(d) {
-  const dev = devices.find(x => x.index === d[0]);
-  if (d[1] === 0x41 && d[0] >= 1 && d[0] <= 6) {
-    const linkLost = !!(d[3] & 0x40);
-    log(`接收器通知：槽位 ${d[0]} ${linkLost ? '中斷連線' : '已連線'}`, 'l-ev');
-    return;
-  }
-  if (dev) {
-    const f = dev.featList.find(x => x.index === d[1]);
-    if (f) log(`事件：${dev.name} → ${FEATURE_NAMES[f.id] || hx(f.id, 4)} ${bytesHex(d.slice(2, 8))}`, 'l-ev');
-  }
-}
-
-// ───────────────────────── 面板 ─────────────────────────
-function card(title, featId, ...body) {
-  return h('div', { class: 'card' },
-    h('h2', null, title, featId != null ? h('small', null, '0x' + hx(featId, 4)) : null), ...body);
-}
-function errLine(e) { return h('div', { class: 'mut l-err' }, '讀取失敗：' + e.message); }
-async function guard(btn, fn) {
-  btn.disabled = true;
-  try { await fn(); } catch (e) { log(e.message, 'l-err'); alert('操作失敗：' + e.message); }
-  finally { btn.disabled = false; }
-}
-
-async function selectDevice(d) {
-  current = d;
-  renderTabs();
-  setStatus(`${hidDev.productName} → ${d.name}`);
-  const panels = $('#panels');
-  panels.replaceChildren(h('div', { class: 'card wide empty' }, '讀取裝置設定中…'));
-  const builders = [
-    infoPanel, batteryPanel, dpiPanel, reportRatePanel, onboardPanel,
-    smartShiftPanel, hiresPanel, changeHostPanel, controlsPanel, featuresPanel, rawPanel,
-  ];
-  const out = [];
-  for (const b of builders) {
-    if (current !== d) return;
-    try { const el = await b(d); if (el) out.push(el); }
-    catch (e) { log(`${b.name}：${e.message}`, 'l-err'); }
-  }
-  if (current === d) panels.replaceChildren(...out);
-}
-
-async function infoPanel(d) {
-  const rows = [['名稱', d.name], ['類型', DEVICE_TYPES[d.type] ?? '—'], ['協定', 'HID++ ' + d.proto],
-    ['連線', d.index === 0xff ? '直接 (USB / 藍牙)' : `接收器槽位 ${d.index}`],
-    ['USB', `${hidDev.productName} · ${hx(hidDev.productId, 4)}`]];
-  if (d.has(F.FW_VERSION)) {
-    try {
-      const n = (await d.call(F.FW_VERSION, 0))[0];
-      for (let i = 0; i < n; i++) {
-        const r = await d.call(F.FW_VERSION, 1, [i]);
-        const prefix = String.fromCharCode(r[1], r[2], r[3]).replace(/\0/g, '').trim();
-        if (r[0] === 2) { rows.push(['硬體版本', `${r[4]}`]); continue; }
-        rows.push([`韌體 · ${FW_TYPES[r[0]] ?? r[0]}`, `${prefix} ${hx(r[4])}.${hx(r[5])}.B${hx((r[6] << 8) | r[7], 4)}`]);
-      }
-    } catch (e) { rows.push(['韌體', e.message]); }
-  }
-  return card('裝置資訊', null, h('dl', { class: 'kv' }, rows.map(([k, v]) => [h('dt', null, k), h('dd', null, v)])));
-}
-
-async function batteryPanel(d) {
-  let pct = null, text = '', extra = '';
-  if (d.has(F.UNIFIED_BATTERY)) {
-    const r = await d.call(F.UNIFIED_BATTERY, 1);
-    const lv = r[1] & 8 ? '滿' : r[1] & 4 ? '良好' : r[1] & 2 ? '低' : r[1] & 1 ? '極低' : '';
-    pct = r[0] || null;
-    text = pct ? `${pct}%` : lv;
-    extra = ['放電中', '充電中', '慢速充電', '已充飽', '充電錯誤'][r[2]] ?? '';
-    if (r[3]) extra += ' · 外部電源';
-  } else if (d.has(F.BATTERY_STATUS)) {
-    const r = await d.call(F.BATTERY_STATUS, 0);
-    pct = r[0]; text = `${pct}%`;
-    extra = ['放電中', '充電中', '即將充飽', '已充飽', '慢速充電', '電池無效', '溫度異常'][r[2]] ?? '';
-  } else if (d.has(F.BATTERY_VOLTAGE)) {
-    const r = await d.call(F.BATTERY_VOLTAGE, 0);
-    const mv = (r[0] << 8) | r[1];
-    text = `${mv} mV`;
-    pct = Math.max(0, Math.min(100, Math.round((mv - 3500) / 7)));  // 粗略換算 3.5V–4.2V
-    extra = (r[2] & 0x80 ? '充電中' : '放電中') + ' · 百分比為電壓估算';
-  } else return null;
-  const fid = d.has(F.UNIFIED_BATTERY) ? F.UNIFIED_BATTERY : d.has(F.BATTERY_STATUS) ? F.BATTERY_STATUS : F.BATTERY_VOLTAGE;
-  return card('電池', fid,
-    h('div', { class: 'big' }, text),
-    pct != null ? h('div', { class: 'bar' }, h('i', { style: `width:${pct}%;background:${pct <= 15 ? 'var(--err)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)'}` })) : null,
-    h('div', { class: 'mut', style: 'margin-top:6px' }, extra));
-}
-
-// DPI 清單：每個值 2 bytes，0 結尾；0xE000|step 代表「從前一個值到下一個值，每 step 一格」
 function parseDpiList(bytes) {
   const vals = [];
   for (let i = 0; i + 1 < bytes.length; i += 2) {
@@ -565,215 +464,676 @@ function dpiApi(d) {
   return null;
 }
 
+
 const LOD_NAMES = ['低', '中', '高'];
 
-async function dpiPanel(d) {
-  const api = dpiApi(d);
-  if (!api) return null;
-  const sensors = await api.sensors();
-  let sensor = 0;
-  const body = h('div');
-  const sensorSel = sensors > 1 ? h('select', { onchange: (e) => { sensor = +e.target.value; load(); } },
-    Array.from({ length: sensors }, (_, i) => h('option', { value: i }, `感測器 ${i + 1}`))) : null;
-  async function load() {
-    const list = await api.list(sensor);
-    const { cur, def, lod } = await api.get(sensor);
-    const steps = list.length ? list : Array.from({ length: 160 }, (_, i) => 100 + i * 50);
-    const nearestIdx = (v) => steps.reduce((bi, x, i) => Math.abs(x - v) < Math.abs(steps[bi] - v) ? i : bi, 0);
-    const big = h('div', { class: 'big' }, cur, h('span', { class: 'mut' }, ' DPI'));
-    const num = h('input', { type: 'number', min: steps[0], max: steps[steps.length - 1], value: cur, style: 'width:110px' });
-    const range = h('input', { type: 'range', min: 0, max: steps.length - 1, value: nearestIdx(cur),
-      oninput: () => { num.value = steps[range.value]; } });
-    num.onchange = () => { range.value = nearestIdx(+num.value); num.value = steps[range.value]; };
-    const refresh = async () => {
-      const now = await api.get(sensor);
-      big.firstChild.textContent = now.cur; num.value = now.cur; range.value = nearestIdx(now.cur);
-      if (lodSel && now.lod != null) lodSel.value = now.lod;
-      return now;
-    };
-    const apply = async (v) => {
-      v = steps[nearestIdx(v)];
-      await api.set(sensor, v);
-      const now = await refresh();
-      log(`DPI 已設為 ${now.cur}`, 'l-ok');
-    };
-    const lodSel = api.hasLod(sensor) ? h('select', null, LOD_NAMES.map((n, i) => h('option', { value: i }, n))) : null;
-    if (lodSel) {
-      lodSel.value = lod ?? 1;
-      lodSel.onchange = () => guard(lodSel, async () => {
-        await api.set(sensor, +num.value, +lodSel.value);
-        await refresh();
-        log(`離地高度 (LOD) 已設為 ${LOD_NAMES[lodSel.value]}`, 'l-ok');
-      });
+// ───────────────────────── 圖示與滑鼠插圖 ─────────────────────────
+const ICONS = {
+  dpi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M9 5l3-2 3 2M9 19l3 2 3-2M5 9l-2 3 2 3M19 9l2 3-2 3"/></svg>',
+  buttons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M12 8v8M8 12h8"/></svg>',
+  wheel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></svg>',
+  adv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 6l-6 6 6 6"/></svg>',
+};
+const svgEl = (markup) => { const t = document.createElement('template'); t.innerHTML = markup.trim(); return t.content.firstChild; };
+
+// 通用的俯視滑鼠插圖（非任何特定產品）；ox 為水平位移，hl 為要高亮的部位
+function mouseShape(ox = 0, hl = '') {
+  const a = (k) => hl === k ? 'var(--acc)' : '';
+  return `
+  <g transform="translate(${ox},0)">
+    <path d="M150 18C88 18 56 66 52 150L48 300C46 382 96 428 150 428C204 428 254 382 252 300L248 150C244 66 212 18 150 18Z" fill="#e9ebee"/>
+    <path d="M147 20C92 22 60 66 55 150L53 182Q100 194 147 196Z" fill="${a('left') || '#17181b'}"/>
+    <path d="M153 20C208 22 240 66 245 150L247 182Q200 194 153 196Z" fill="${a('right') || '#17181b'}"/>
+    <rect x="137" y="58" width="26" height="62" rx="12" fill="${a('middle') || '#3a3d43'}" stroke="#0c0d0f" stroke-width="3"/>
+    <path d="M141 74h18M141 84h18M141 94h18M141 104h18" stroke="#6b7078" stroke-width="2"/>
+    <rect x="42" y="206" width="12" height="44" rx="5" fill="${a('forward') || '#d3d6db'}" stroke="#a9adb4"/>
+    <rect x="42" y="256" width="12" height="44" rx="5" fill="${a('backbtn') || '#d3d6db'}" stroke="#a9adb4"/>
+    <circle cx="150" cy="232" r="2.5" fill="#b9bdc3"/>
+  </g>`;
+}
+function mouseArt(hl) {
+  return svgEl(`<svg viewBox="40 10 220 425" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${mouseShape(0, hl)}</svg>`);
+}
+// 帶標註線的插圖：labels = { left:{title,sub}, ... }
+function mouseCallouts(labels, hl) {
+  const pts = {
+    left: { x: 250, y: 120, side: 'L', ty: 120 },
+    right: { x: 350, y: 130, side: 'R', ty: 150 },
+    middle: { x: 300, y: 84, side: 'R', ty: 56 },
+    forward: { x: 194, y: 228, side: 'L', ty: 228 },
+    backbtn: { x: 194, y: 278, side: 'L', ty: 300 },
+  };
+  let g = '';
+  for (const [k, p] of Object.entries(pts)) {
+    const L = labels[k]; if (!L) continue;
+    const on = hl === k;
+    const stroke = on ? 'var(--acc)' : '#8d939c';
+    const title = esc(L.title), sub = esc(L.sub || '');
+    if (p.side === 'T') {
+      g += `<path d="M${p.x} ${p.y}V${p.ty + 10}" stroke="${stroke}" stroke-width="1.5"/>
+        <text x="${p.x}" y="${p.ty}" text-anchor="middle" class="ct ${on ? 'on' : ''}">${title}</text>
+        <text x="${p.x}" y="${p.ty - 22}" text-anchor="middle" class="cs">${sub}</text>`;
+    } else {
+      const tx = p.side === 'L' ? 24 : 576, anchor = p.side === 'L' ? 'start' : 'end';
+      g += `<path d="M${p.x} ${p.y}L${p.side === 'L' ? p.x - 30 : p.x + 30} ${p.ty}H${tx}" fill="none" stroke="${stroke}" stroke-width="1.5"/>
+        <circle cx="${p.x}" cy="${p.y}" r="7" fill="#fff" stroke="${stroke}" stroke-width="2"/>
+        <text x="${tx}" y="${p.ty - 9}" text-anchor="${anchor}" class="ct ${on ? 'on' : ''}">${title}</text>
+        <text x="${tx}" y="${p.ty + 20}" text-anchor="${anchor}" class="cs">${sub}</text>`;
     }
-    const presets = [400, 800, 1000, 1600, 2400, 3200, 6400].filter(p => p >= steps[0] && p <= steps[steps.length - 1]);
-    const applyBtn = h('button', { class: 'primary', onclick: (e) => guard(e.target, () => apply(+num.value)) }, '套用');
-    body.replaceChildren(
-      big,
-      h('div', { class: 'mut' }, `範圍 ${steps[0]}–${steps[steps.length - 1]} · 預設 ${def || '—'}`),
-      h('div', { class: 'row' }, range),
-      h('div', { class: 'row' }, num, applyBtn,
-        def ? h('button', { onclick: (e) => guard(e.target, () => apply(def)) }, '恢復預設') : null),
-      h('div', { class: 'row' }, presets.map(p => h('button', { onclick: (e) => guard(e.target, () => apply(p)) }, p))),
-      lodSel ? h('div', { class: 'row' }, '離地高度 (LOD)', lodSel) : null);
   }
-  await load();
-  return card('DPI 靈敏度', api.fid, sensorSel, body);
+  return svgEl(`<svg viewBox="0 0 600 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="按鍵配置圖">
+    <style>.ct{font:700 17px var(--body);fill:var(--fg)}.ct.on{fill:var(--acc)}.cs{font:13px var(--body);fill:var(--mut)}</style>
+    ${mouseShape(150, hl)}${g}</svg>`);
+}
+function batteryIcon(pct) {
+  const w = Math.max(1, Math.round(14 * (pct ?? 0) / 100));
+  const c = pct == null ? 'var(--mut)' : pct <= 15 ? 'var(--err)' : pct <= 30 ? 'var(--warn)' : 'var(--ok)';
+  return svgEl(`<svg viewBox="0 0 22 12" aria-hidden="true"><rect x=".5" y=".5" width="18" height="11" rx="2.5" fill="none" stroke="currentColor"/><rect x="19.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/><rect x="2.5" y="2.5" width="${w}" height="7" rx="1" fill="${c}"/></svg>`);
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ───────────────────────── 共用 UI ─────────────────────────
+let toastTimer;
+function toast(msg, kind = '') {
+  document.querySelector('.toast')?.remove();
+  const t = h('div', { class: 'toast ' + kind, role: 'status' }, msg);
+  document.body.append(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 2600);
+}
+async function guard(el, fn) {
+  if (el) el.disabled = true;
+  try { await fn(); }
+  catch (e) { log(e.message, 'l-err'); toast('操作失敗：' + e.message, 'err'); }
+  finally { if (el) el.disabled = false; }
+}
+function sw(checked, onchange, disabled) {
+  const inp = h('input', { type: 'checkbox', checked, disabled, role: 'switch', onchange });
+  return h('label', { class: 'sw' }, inp, h('i'));
+}
+function selectOf(options, value, onchange) {
+  const s = h('select', { onchange }, options.map(o => h('option', { value: o.v }, o.t)));
+  s.value = value;
+  return s;
+}
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('logiweb:' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('logiweb:' + k, JSON.stringify(v)); } catch {} },
+};
+
+// ───────────────────────── 讀取裝置資料 ─────────────────────────
+async function loadBattery(d) {
+  if (d.has(F.UNIFIED_BATTERY)) {
+    const r = await d.call(F.UNIFIED_BATTERY, 1);
+    const lv = r[1] & 8 ? '滿' : r[1] & 4 ? '良好' : r[1] & 2 ? '低' : r[1] & 1 ? '極低' : '';
+    return { pct: r[0] || null, text: r[0] ? `${r[0]}%` : lv, charging: r[2] === 1 || r[2] === 2,
+      extra: (['放電中', '充電中', '慢速充電', '已充飽', '充電錯誤'][r[2]] ?? '') + (r[3] ? ' · 外部電源' : '') };
+  }
+  if (d.has(F.BATTERY_STATUS)) {
+    const r = await d.call(F.BATTERY_STATUS, 0);
+    return { pct: r[0], text: `${r[0]}%`, charging: r[2] === 1 || r[2] === 4,
+      extra: ['放電中', '充電中', '即將充飽', '已充飽', '慢速充電', '電池無效', '溫度異常'][r[2]] ?? '' };
+  }
+  if (d.has(F.BATTERY_VOLTAGE)) {
+    const r = await d.call(F.BATTERY_VOLTAGE, 0);
+    const mv = (r[0] << 8) | r[1];
+    const pct = Math.max(0, Math.min(100, Math.round((mv - 3500) / 7)));
+    return { pct, text: `≈${pct}%`, extra: `${mv} mV（依電壓估算）` + (r[2] & 0x80 ? ' · 充電中' : '') };
+  }
+  return null;
 }
 
-async function reportRatePanel(d) {
-  let options = [], cur, set, fid;
+function rateApi(d) {
   if (d.has(F.EXT_REPORT_RATE)) {
-    fid = F.EXT_REPORT_RATE;
     const HZ = [125, 250, 500, 1000, 2000, 4000, 8000];
-    const r = await d.call(F.EXT_REPORT_RATE, 1, [0]);
-    const mask = (r[0] << 8) | r[1];
-    options = HZ.map((hz, i) => ({ v: i, hz })).filter(o => mask & (1 << o.v));
-    cur = (await d.call(F.EXT_REPORT_RATE, 2))[0];
-    set = (v) => d.call(F.EXT_REPORT_RATE, 3, [v]);
-  } else if (d.has(F.REPORT_RATE)) {
-    fid = F.REPORT_RATE;
-    const mask = (await d.call(F.REPORT_RATE, 0))[0];
-    for (let i = 0; i < 8; i++) if (mask & (1 << i)) options.push({ v: i + 1, hz: Math.round(1000 / (i + 1)) });
-    cur = (await d.call(F.REPORT_RATE, 1))[0];
-    set = (v) => d.call(F.REPORT_RATE, 2, [v]);
-  } else return null;
-  options.sort((a, b) => b.hz - a.hz);
-  const sel = h('select', null, options.map(o => h('option', { value: o.v }, `${o.hz} Hz`)));
-  sel.value = cur;
-  return card('回報率 (Polling Rate)', fid,
-    h('div', { class: 'row' }, sel, h('button', { class: 'primary', onclick: (e) => guard(e.target, async () => {
-      await set(+sel.value);
-      log(`回報率已設為 ${sel.selectedOptions[0].text}`, 'l-ok');
-    }) }, '套用')),
-    h('div', { class: 'mut' }, '較高的回報率反應更即時，但會略增耗電與 CPU 負載。'));
-}
-
-async function onboardPanel(d) {
-  if (!d.has(F.ONBOARD_PROFILES)) return null;
-  const mode = (await d.call(F.ONBOARD_PROFILES, 2))[0];
-  const wrap = h('div', { class: 'row' });
-  const render = (m) => wrap.replaceChildren(
-    h('button', { class: m === 1 ? 'on' : '', onclick: (e) => guard(e.target, () => setMode(1)) }, '內建記憶體模式'),
-    h('button', { class: m === 2 ? 'on' : '', onclick: (e) => guard(e.target, () => setMode(2)) }, '主機模式'));
-  async function setMode(m) {
-    await d.call(F.ONBOARD_PROFILES, 1, [m]);
-    render((await d.call(F.ONBOARD_PROFILES, 2))[0]);
-    log(`板載設定檔模式：${m === 1 ? '內建記憶體' : '主機'}`, 'l-ok');
+    return {
+      fid: F.EXT_REPORT_RATE,
+      async load() {
+        const r = await d.call(F.EXT_REPORT_RATE, 1, [0]);
+        const mask = (r[0] << 8) | r[1];
+        const options = HZ.map((hz, i) => ({ v: i, hz })).filter(o => mask & (1 << o.v));
+        return { options, cur: (await d.call(F.EXT_REPORT_RATE, 2))[0] };
+      },
+      set: (v) => d.call(F.EXT_REPORT_RATE, 3, [v]),
+    };
   }
-  render(mode);
-  return card('板載設定檔', F.ONBOARD_PROFILES, wrap,
-    h('div', { class: 'mut' }, '「內建記憶體模式」會使用儲存在滑鼠裡的設定檔，可能覆蓋本頁的 DPI / 回報率。若變更沒生效，請切換到「主機模式」；主機模式下的設定通常在斷電後會還原。'));
-}
-
-async function smartShiftPanel(d) {
-  const enh = d.has(F.SMART_SHIFT_ENH);
-  if (!enh && !d.has(F.SMART_SHIFT)) return null;
-  const fid = enh ? F.SMART_SHIFT_ENH : F.SMART_SHIFT;
-  const getFn = enh ? 1 : 0, setFn = enh ? 2 : 1;
-  const r = await d.call(fid, getFn);
-  const sel = h('select', null, h('option', { value: 2 }, '段落感 (Ratchet)'), h('option', { value: 1 }, '自由滾動 (Free-spin)'));
-  sel.value = r[0] === 1 ? 1 : 2;
-  const autoOn = r[1] > 0 && r[1] < 0xff;
-  const chk = h('input', { type: 'checkbox', checked: autoOn });
-  const thr = h('input', { type: 'range', min: 1, max: 50, value: autoOn ? Math.min(r[1], 50) : 10 });
-  const thrLbl = h('span', { class: 'mono' }, thr.value);
-  thr.oninput = () => { thrLbl.textContent = thr.value; };
-  return card('SmartShift 滾輪', fid,
-    h('div', { class: 'row' }, '滾輪模式', sel),
-    h('div', { class: 'row' }, h('label', null, chk, ' 快速撥動時自動切換為自由滾動')),
-    h('div', { class: 'row' }, '靈敏度', h('div', { style: 'flex:1' }, thr), thrLbl),
-    h('div', { class: 'row' }, h('button', { class: 'primary', onclick: (e) => guard(e.target, async () => {
-      const auto = chk.checked ? +thr.value : 0xff;
-      await d.call(fid, setFn, [+sel.value, auto, 0]);
-      log('SmartShift 設定已套用', 'l-ok');
-    }) }, '套用')),
-    h('div', { class: 'mut' }, '靈敏度數值越小，越容易切換到自由滾動。'));
-}
-
-async function hiresPanel(d) {
-  if (!d.has(F.HIRES_WHEEL)) return null;
-  const mode = (await d.call(F.HIRES_WHEEL, 1))[0];
-  const hires = h('input', { type: 'checkbox', checked: !!(mode & 2) });
-  const invert = h('input', { type: 'checkbox', checked: !!(mode & 4) });
-  return card('高解析度滾輪', F.HIRES_WHEEL,
-    h('div', { class: 'row' }, h('label', null, hires, ' 高解析度捲動（更細緻、平滑）')),
-    h('div', { class: 'row' }, h('label', null, invert, ' 反向捲動方向')),
-    h('div', { class: 'row' }, h('button', { class: 'primary', onclick: (e) => guard(e.target, async () => {
-      // bit0 (轉送給 HID++) 永遠清除，避免作業系統收不到滾輪事件
-      const m = (hires.checked ? 2 : 0) | (invert.checked ? 4 : 0);
-      await d.call(F.HIRES_WHEEL, 2, [m]);
-      log('滾輪模式已套用', 'l-ok');
-    }) }, '套用')));
-}
-
-async function changeHostPanel(d) {
-  if (!d.has(F.CHANGE_HOST)) return null;
-  const r = await d.call(F.CHANGE_HOST, 0);
-  const n = r[0], cur = r[1];
-  return card('Easy-Switch 主機切換', F.CHANGE_HOST,
-    h('div', { class: 'row' }, Array.from({ length: n }, (_, i) =>
-      h('button', { class: i === cur ? 'on' : '', disabled: i === cur, onclick: async () => {
-        if (!confirm(`切換到主機 ${i + 1}？裝置會立即與這台電腦中斷連線。`)) return;
-        try { await d.call(F.CHANGE_HOST, 1, [i], 600); } catch {}
-        log(`已要求切換到主機 ${i + 1}`, 'l-ok');
-      } }, `主機 ${i + 1}`))),
-    h('div', { class: 'mut' }, `目前：主機 ${cur + 1}`));
-}
-
-async function controlsPanel(d) {
-  if (!d.has(F.REPROG_V4)) return null;
-  const n = (await d.call(F.REPROG_V4, 0))[0];
-  const rows = [];
-  for (let i = 0; i < n; i++) {
-    const r = await d.call(F.REPROG_V4, 1, [i]);
-    const cid = (r[0] << 8) | r[1], flags = r[4] | (r[8] << 8);
-    const tags = [];
-    if (flags & 0x20) tags.push('可轉送');
-    if (flags & 0x10) tags.push('可重新指派');
-    if (flags & 0x100) tags.push('原始 XY');
-    rows.push(h('tr', null, h('td', { class: 'mono' }, '0x' + hx(cid, 4)), h('td', null, CID_NAMES[cid] || '—'), h('td', { class: 'mut' }, tags.join('、'))));
+  if (d.has(F.REPORT_RATE)) {
+    return {
+      fid: F.REPORT_RATE,
+      async load() {
+        const mask = (await d.call(F.REPORT_RATE, 0))[0];
+        const options = [];
+        for (let i = 0; i < 8; i++) if (mask & (1 << i)) options.push({ v: i + 1, hz: Math.round(1000 / (i + 1)) });
+        return { options, cur: (await d.call(F.REPORT_RATE, 1))[0] };
+      },
+      set: (v) => d.call(F.REPORT_RATE, 2, [v]),
+    };
   }
-  return card(`按鍵列表（${n}）`, F.REPROG_V4,
-    h('div', { class: 'tablewrap' }, h('table', null, h('tr', null, h('th', null, 'CID'), h('th', null, '名稱'), h('th', null, '能力')), rows)),
-    h('div', { class: 'mut', style: 'margin-top:6px' }, '目前為唯讀檢視；按鍵重新指派功能尚未實作。'));
+  return null;
 }
 
-async function featuresPanel(d) {
-  const rows = d.featList.map(f => {
-    const flags = [f.type & 0x80 ? '已淘汰' : '', f.type & 0x40 ? '隱藏' : '', f.type & 0x20 ? '工程用' : ''].filter(Boolean).join('、');
-    return h('tr', null, h('td', { class: 'mono' }, hx(f.index)), h('td', { class: 'mono' }, '0x' + hx(f.id, 4)),
-      h('td', null, FEATURE_NAMES[f.id] || h('span', { class: 'mut' }, '未知')), h('td', { class: 'mono' }, 'v' + f.version), h('td', { class: 'mut' }, flags));
+// 板載設定檔：唯讀解析（格式參考 Solaar，只支援 profile format ≤ 5）
+const BTN_FUNC = ['無動作', '滾輪左傾', '滾輪右傾', '下一個 DPI', '上一個 DPI', 'DPI 循環', '預設 DPI', 'DPI Shift',
+  '下一個設定檔', '上一個設定檔', '設定檔循環', 'G-Shift', '顯示電量', '選擇設定檔', '模式切換', '主機按鍵', '向下捲動', '向上捲動'];
+const MOUSE_BITS = { 1: '左鍵點擊', 2: '右鍵點擊', 4: '中鍵點擊', 8: '後退', 16: '前進' };
+function keyName(mod, code) {
+  const mods = [];
+  if (mod & 0x11) mods.push('Ctrl'); if (mod & 0x22) mods.push('Shift'); if (mod & 0x44) mods.push('Alt'); if (mod & 0x88) mods.push('Win');
+  let k;
+  if (code >= 4 && code <= 29) k = String.fromCharCode(61 + code);
+  else if (code >= 30 && code <= 38) k = String(code - 29);
+  else if (code === 39) k = '0';
+  else if (code >= 0x3a && code <= 0x45) k = 'F' + (code - 0x39);
+  else k = { 0x28: 'Enter', 0x29: 'Esc', 0x2a: 'Backspace', 0x2b: 'Tab', 0x2c: 'Space' }[code] || (code ? `鍵碼 0x${hx(code)}` : '');
+  return [...mods, k].filter(Boolean).join(' + ');
+}
+function describeButton(b) {
+  if (b[0] === 0xff) return '未設定';
+  const beh = b[0] >> 4;
+  if (beh === 8) {
+    if (b[1] === 0) return '停用';
+    if (b[1] === 1) { const v = (b[2] << 8) | b[3]; return MOUSE_BITS[v] || `滑鼠按鍵 0x${hx(v, 4)}`; }
+    if (b[1] === 2) return '鍵盤：' + keyName(b[2], b[3]);
+    if (b[1] === 3) return `多媒體鍵 0x${hx((b[2] << 8) | b[3], 4)}`;
+  }
+  if (beh === 9) return BTN_FUNC[b[1]] ?? `功能 0x${hx(b[1])}`;
+  if (beh === 0) return '巨集';
+  return '其他';
+}
+async function readOnboard(d) {
+  const r = await d.call(F.ONBOARD_PROFILES, 0);
+  const info = { memory: r[0], format: r[1], count: r[3], buttons: r[5], sectors: r[6], size: (r[7] << 8) | r[8], shift: r[9] };
+  info.gbuttons = (info.shift & 3) === 2 ? info.buttons : 0;
+  if (info.memory !== 1 || info.format > 5 || info.size < 64) return { info, supported: false };
+  const read = (sector, off) => d.call(F.ONBOARD_PROFILES, 5, [sector >> 8, sector & 0xff, off >> 8, off & 0xff]);
+  const blank = (c) => c.slice(0, 4).every(b => b === 0) || c.slice(0, 4).every(b => b === 0xff);
+  let base = 0, chunk = await read(0, 0);
+  if (blank(chunk)) { base = 0x100; chunk = await read(base, 0); }
+  const headers = [];
+  for (let i = 0; i < 16; i++) {
+    const c = i === 0 ? chunk : await read(base, i * 4);
+    if (c[0] === 0xff && c[1] === 0xff) break;
+    headers.push({ sector: (c[0] << 8) | c[1], enabled: c[2] });
+  }
+  let cur = null;
+  try { const g = await d.call(F.ONBOARD_PROFILES, 4); cur = (g[0] << 8) | g[1]; } catch {}
+  const idx = cur && headers[cur - 1] ? cur - 1 : Math.max(0, headers.findIndex(x => x.enabled));
+  const hd = headers[idx];
+  if (!hd) return { info, supported: false };
+  const bytes = [];
+  for (let o = 0; o < 208 && o + 16 <= info.size; o += 16) bytes.push(...(await read(hd.sector, o)).slice(0, 16));
+  const le16 = (i) => bytes[i] | (bytes[i + 1] << 8);
+  const p = {
+    index: idx + 1, count: headers.length, sector: hd.sector,
+    reportRateMs: bytes[0], defaultIndex: bytes[1], shiftIndex: bytes[2],
+    resolutions: [0, 1, 2, 3, 4].map(i => le16(3 + i * 2)),
+    buttons: [], gbuttons: [], name: '',
+  };
+  for (let i = 0; i < info.buttons && 32 + i * 4 + 4 <= bytes.length; i++) p.buttons.push(bytes.slice(32 + i * 4, 36 + i * 4));
+  for (let i = 0; i < info.gbuttons && 96 + i * 4 + 4 <= bytes.length; i++) p.gbuttons.push(bytes.slice(96 + i * 4, 100 + i * 4));
+  if (bytes.length >= 208 && bytes[160] !== 0xff) {
+    try { p.name = new TextDecoder('utf-16le').decode(new Uint8Array(bytes.slice(160, 208))).replace(/[\0￿]+$/g, ''); } catch {}
+  }
+  return { info, supported: true, profile: p };
+}
+
+async function loadAll(d) {
+  const x = d.data = { sensor: 0 };
+  const step = async (label, fn) => { try { await fn(); } catch (e) { log(`${label}：${e.message}`, 'l-err'); } };
+  await step('電池', async () => { x.battery = await loadBattery(d); });
+  x.dpiApi = dpiApi(d);
+  if (x.dpiApi) await step('DPI', async () => {
+    x.sensors = await x.dpiApi.sensors();
+    const list = await x.dpiApi.list(0);
+    x.steps = list.length ? list : Array.from({ length: 160 }, (_, i) => 100 + i * 50);
+    Object.assign(x, await x.dpiApi.get(0));
   });
-  return h('div', { class: 'card wide' }, h('h2', null, `支援的功能（${d.featList.length}）`),
-    h('div', { class: 'tablewrap' }, h('table', null,
-      h('tr', null, h('th', null, '索引'), h('th', null, 'Feature ID'), h('th', null, '名稱'), h('th', null, '版本'), h('th', null, '旗標')), rows)));
+  x.rateApi = rateApi(d);
+  if (x.rateApi) await step('回報率', async () => { x.rate = await x.rateApi.load(); });
+  if (d.has(F.ONBOARD_PROFILES)) {
+    await step('板載模式', async () => { x.onboardMode = (await d.call(F.ONBOARD_PROFILES, 2))[0]; });
+    await step('板載設定檔', async () => { x.onboard = await readOnboard(d); });
+  }
+  if (d.has(F.FW_VERSION)) await step('韌體', async () => {
+    x.fw = [];
+    const n = (await d.call(F.FW_VERSION, 0))[0];
+    for (let i = 0; i < n; i++) {
+      const r = await d.call(F.FW_VERSION, 1, [i]);
+      const prefix = String.fromCharCode(r[1], r[2], r[3]).replace(/\0/g, '').trim();
+      x.fw.push(r[0] === 2 ? ['硬體版本', String(r[4])]
+        : [`韌體 · ${FW_TYPES[r[0]] ?? r[0]}`, `${prefix} ${hx(r[4])}.${hx(r[5])}.B${hx((r[6] << 8) | r[7], 4)}`]);
+    }
+  });
+  if (d.has(F.HIRES_WHEEL)) await step('滾輪', async () => { x.wheelMode = (await d.call(F.HIRES_WHEEL, 1))[0]; });
+  const ss = d.has(F.SMART_SHIFT_ENH) ? F.SMART_SHIFT_ENH : d.has(F.SMART_SHIFT) ? F.SMART_SHIFT : null;
+  if (ss) await step('SmartShift', async () => { x.smart = { fid: ss, r: await d.call(ss, ss === F.SMART_SHIFT_ENH ? 1 : 0) }; });
+  if (d.has(F.CHANGE_HOST)) await step('Easy-Switch', async () => { const r = await d.call(F.CHANGE_HOST, 0); x.hosts = { n: r[0], cur: r[1] }; });
+  if (d.has(F.REPROG_V4)) await step('按鍵列表', async () => {
+    x.controls = [];
+    const n = (await d.call(F.REPROG_V4, 0))[0];
+    for (let i = 0; i < n; i++) {
+      const r = await d.call(F.REPROG_V4, 1, [i]);
+      x.controls.push({ cid: (r[0] << 8) | r[1], flags: r[4] | (r[8] << 8) });
+    }
+  });
+  // DPI 檔位（存在瀏覽器裡，對應 G HUB 主機模式的做法）
+  const key = 'stages:' + d.name;
+  x.stages = store.get(key, null);
+  if (!x.stages) {
+    const base = x.onboard?.profile?.resolutions?.filter(Boolean);
+    const vals = base?.length ? base : [x.cur || 800, 1200, 1600, 2400, 3200];
+    x.stages = { list: [0, 1, 2, 3, 4].map(i => ({ dpi: vals[i] || [800, 1200, 1600, 2400, 3200][i], on: i === 0 || !!base?.[i] })), active: 0 };
+    if (x.cur && !base?.length) x.stages.list[0].dpi = x.cur;
+  }
+  const match = x.stages.list.findIndex(s => s.on && s.dpi === x.cur);
+  if (match >= 0) x.stages.active = match;
+  x.saveStages = () => store.set(key, x.stages);
 }
 
-async function rawPanel(d) {
-  const fid = h('input', { class: 'mono', value: '2201', size: 6, title: 'Feature ID（16 進位）' });
-  const fn = h('input', { class: 'mono', type: 'number', min: 0, max: 15, value: 2, style: 'width:64px', title: 'Function 編號' });
-  const params = h('input', { class: 'mono', value: '00', style: 'flex:1;min-width:120px', placeholder: '參數，例如 00 0C 80' });
-  const out = h('pre', { class: 'mono', style: 'background:var(--code);padding:8px;border-radius:8px;margin:8px 0 0;min-height:36px;white-space:pre-wrap' }, '');
-  return h('div', { class: 'card wide' }, h('h2', null, '進階：送出原始 HID++ 指令'),
-    h('div', { class: 'row' }, 'Feature', fid, 'Fn', fn, '參數', params,
-      h('button', { onclick: (e) => guard(e.target, async () => {
-        const id = parseInt(fid.value, 16);
-        const ps = params.value.trim() ? params.value.trim().split(/[\s,]+/).map(x => parseInt(x, 16) & 0xff) : [];
-        if (Number.isNaN(id) || ps.some(Number.isNaN)) throw new Error('格式錯誤，請輸入 16 進位數值');
-        try {
-          const r = await d.call(id, +fn.value, ps);
-          out.textContent = bytesHex(r);
-        } catch (err) { out.textContent = '錯誤：' + err.message; }
-      }) }, '送出')),
-    h('div', { class: 'mut' }, '⚠ 寫入類指令可能改變裝置設定，請確認你了解指令內容再送出。'),
-    out);
+// ───────────────────────── 應用程式狀態與連線 ─────────────────────────
+let hidDev = null, transport = null, devices = [], current = null, section = 'dpi';
+
+$('#btnConnect').onclick = connect;
+$('#btnDisconnect').onclick = disconnect;
+$('#btnClearLog').onclick = () => { logEl.textContent = ''; };
+$('#btnLog').onclick = () => { $('#drawer').hidden = !$('#drawer').hidden; };
+
+function checkSupport() {
+  if (!('hid' in navigator)) {
+    notice('此瀏覽器不支援 <b>WebHID</b>。請使用桌面版 <b>Chrome、Edge 或 Opera</b>（89 版以上）；Firefox 與 Safari 目前不支援。', 'err');
+    $('#btnConnect').disabled = true;
+    return false;
+  }
+  if (!window.isSecureContext) {
+    notice('WebHID 只能在安全環境使用：請用 <code>https://</code> 或 <code>http://localhost</code> 開啟此頁面。', 'err');
+    $('#btnConnect').disabled = true;
+    return false;
+  }
+  return true;
+}
+
+async function connect() {
+  try {
+    const list = await navigator.hid.requestDevice({ filters: HID_FILTERS });
+    if (list.length) await openHid(list);
+  } catch (e) { log('連線失敗：' + e.message, 'l-err'); }
+}
+function pickHidpp(list) {
+  return list.find(d => d.collections.some(c => c.usagePage === 0xff00 || c.usagePage === 0xff43)) || list[0];
+}
+async function openHid(list) {
+  await disconnect();
+  hidDev = pickHidpp(list);
+  setStatus('開啟中…');
+  try {
+    if (!hidDev.opened) await hidDev.open();
+  } catch (e) {
+    log(`無法開啟裝置：${e.message}`, 'l-err');
+    notice('無法開啟裝置。請先完全關閉 G HUB／Options+／Solaar（包含系統匣圖示）再試一次；Linux 需設定 hidraw 權限（見 README）。', 'err');
+    setStatus('未連線'); hidDev = null; render();
+    return;
+  }
+  transport = new HidppTransport(hidDev);
+  transport.listeners.add(onNotification);
+  $('#btnDisconnect').disabled = false;
+  log(`已開啟：${hidDev.productName}（VID ${hx(hidDev.vendorId, 4)} / PID ${hx(hidDev.productId, 4)}）`, 'l-ok');
+  await discover();
+}
+async function disconnect() {
+  if (transport) transport.close();
+  if (hidDev?.opened) { try { await hidDev.close(); } catch {} }
+  hidDev = null; transport = null; devices = []; current = null;
+  $('#btnDisconnect').disabled = true;
+  setStatus('未連線');
+  render();
+}
+navigator.hid?.addEventListener('disconnect', (e) => {
+  if (e.device === hidDev) { log('裝置已拔除', 'l-err'); disconnect(); }
+});
+
+async function probe(index, timeout) {
+  try {
+    const r = await transport.request(index, 0, 1, [0, 0, 0x5a], timeout);
+    if (r[0] < 2) { log(`索引 ${hx(index)}：HID++ ${r[0]}.${r[1]}（不支援的舊協定）`, 'l-err'); return null; }
+    return new LogiDevice(transport, index, `${r[0]}.${r[1]}`);
+  } catch (e) {
+    if (e.kind === 'hidpp10' && index === 0xff) log('此為接收器，開始掃描已配對裝置…');
+    else if (index !== 0xff) log(`槽位 ${index}：${e.message}`);
+    return null;
+  }
+}
+let scanning = false;
+async function discover() {
+  if (!transport || scanning) return;
+  scanning = true;
+  setStatus('偵測裝置中…');
+  devices = []; current = null;
+  render();
+  const looksLikeReceiver = RECEIVER_PIDS.has(hidDev.productId) || /receiver|unifying|bolt|lightspeed/i.test(hidDev.productName);
+  if (!looksLikeReceiver) { const d = await probe(0xff, 1500); if (d) devices.push(d); }
+  if (!devices.length) for (let i = 1; i <= 6; i++) { const d = await probe(i, 700); if (d) devices.push(d); }
+  for (const d of devices) {
+    try { await d.loadFeatures(); await d.readName(); d.battery = await loadBattery(d).catch(() => null); }
+    catch (e) { log(`讀取 ${d.name} 失敗：${e.message}`, 'l-err'); }
+  }
+  scanning = false;
+  setStatus(hidDev ? hidDev.productName : '未連線');
+  render();
+}
+
+function onNotification(d) {
+  if (d[1] === 0x41 && d[0] >= 1 && d[0] <= 6) {
+    log(`接收器通知：槽位 ${d[0]} ${d[3] & 0x40 ? '中斷連線' : '已連線'}`, 'l-ev');
+    return;
+  }
+  const dev = devices.find(x => x.index === d[0]);
+  const f = dev?.featList.find(x => x.index === d[1]);
+  if (f) log(`事件：${dev.name} → ${FEATURE_NAMES[f.id] || hx(f.id, 4)} ${bytesHex(d.slice(2, 8))}`, 'l-ev');
+}
+
+async function openDevice(d) {
+  current = d;
+  setStatus(`${hidDev.productName} → ${d.name}`);
+  render();
+  await loadAll(d);
+  if (current === d) render();
+}
+
+// ───────────────────────── 畫面 ─────────────────────────
+function render() {
+  const app = $('#app');
+  if (current) return app.replaceChildren(...renderDevice(current));
+  app.replaceChildren(renderHome());
+}
+
+function renderHome() {
+  if (scanning) return h('div', { class: 'home' }, h('div', { class: 'empty-hero' }, h('div', { class: 'art' }, mouseArt()), h('h2', null, '正在偵測裝置…'), h('p', null, '如果透過無線接收器連線，動一下滑鼠可以喚醒它。')));
+  if (!hidDev) {
+    return h('div', { class: 'home' }, h('div', { class: 'empty-hero' },
+      h('div', { class: 'art' }, mouseArt()),
+      h('h2', null, '在瀏覽器裡調整你的羅技裝置'),
+      h('p', null, '按下「連線裝置」，選擇滑鼠、鍵盤或 USB 接收器。不需要安裝任何驅動程式。'),
+      h('button', { class: 'btn primary', onclick: connect, disabled: !('hid' in navigator) }, '連線裝置'),
+      h('div', { class: 'chips' }, ['DPI 檔位', '回報率', '離地高度', '按鍵配置檢視', '滾輪', 'Easy-Switch'].map(t => h('span', { class: 'chip' }, t))),
+      h('p', { class: 'hint' }, '使用前請先完全關閉 G HUB 或 Options+，否則它們會覆蓋這裡的設定。')));
+  }
+  if (!devices.length) {
+    return h('div', { class: 'home' }, h('div', { class: 'empty-hero' },
+      h('div', { class: 'art' }, mouseArt()),
+      h('h2', null, '找不到可用的裝置'),
+      h('p', null, '若使用無線接收器，先動一下滑鼠或按任一鍵喚醒裝置，再重新掃描。'),
+      h('button', { class: 'btn primary', onclick: discover }, '重新掃描')));
+  }
+  return h('div', { class: 'home' },
+    h('div', { class: 'home-grid' }, devices.map(d => {
+      const b = d.battery;
+      return h('button', { class: 'devcard', onclick: () => openDevice(d) },
+        h('h3', null, d.name),
+        h('div', { class: 'meta' }, b ? [b.text, batteryIcon(b.pct)] : null,
+          h('span', { style: 'font:500 12.5px var(--body)' }, d.index === 0xff ? '直接連線' : `接收器槽位 ${d.index}`)),
+        h('div', { class: 'art' }, mouseArt()),
+        h('div', { class: 'foot' }, h('span', null, (DEVICE_TYPES[d.type] ?? '裝置') + ' · HID++ ' + d.proto), h('span', null, '進入設定 →')));
+    })),
+    h('button', { class: 'btn ghost sm', onclick: discover }, '↻ 重新掃描接收器'));
+}
+
+const SECTIONS = [
+  { id: 'dpi', label: '靈敏度', icon: 'dpi' },
+  { id: 'buttons', label: '按鍵配置', icon: 'buttons' },
+  { id: 'wheel', label: '滾輪', icon: 'wheel' },
+  { id: 'adv', label: '進階 / HITS', icon: 'adv' },
+];
+
+function renderDevice(d) {
+  const x = d.data;
+  const b = x?.battery || d.battery;
+  const head = h('div', { class: 'devhead' },
+    h('button', { class: 'icon-btn', title: '回到裝置列表', 'aria-label': '回到裝置列表', onclick: () => { current = null; render(); } }, svgEl(ICONS.back)),
+    h('h1', null, d.name),
+    b ? h('span', { class: 'batt' }, b.text, batteryIcon(b.pct)) : null);
+  if (!x) return [head, h('div', { class: 'home' }, h('p', { class: 'hint' }, '讀取裝置設定中…'))];
+  const rail = h('nav', { class: 'rail', 'aria-label': '設定分類' },
+    SECTIONS.map(s => h('button', { class: section === s.id ? 'on' : '', 'aria-label': s.label, onclick: () => { section = s.id; render(); } }, svgEl(ICONS[s.icon]), h('span', null, s.label))),
+    h('div', { class: 'sp' }),
+    h('button', { class: section === 'info' ? 'on' : '', 'aria-label': '裝置資訊', onclick: () => { section = 'info'; render(); } }, svgEl(ICONS.info), h('span', null, '裝置資訊')));
+  const [side, stage] = ({ dpi: viewDpi, buttons: viewButtons, wheel: viewWheel, adv: viewAdv, info: viewInfo }[section] || viewDpi)(d, x);
+  const body = h('div', { class: 'devbody' }, rail);
+  if (side) body.append(h('aside', { class: 'side' }, side));
+  const st = h('section', { class: side ? 'stage' : 'stage full' }, stage);
+  body.append(st);
+  return [head, body];
+}
+
+// ── 靈敏度 ──
+function viewDpi(d, x) {
+  const side = h('div');
+  side.append(h('h2', null, '靈敏度'),
+    h('p', null, '設定最多 5 個 DPI 檔位，點選檔位編號即可切換。檔位存在這個瀏覽器裡，選中的檔位會即時寫入滑鼠。'));
+  if (x.onboardMode === 1) {
+    side.append(h('div', { class: 'group' }, h('div', { class: 'warnbox' },
+      h('div', null, '滑鼠目前使用「內建記憶體模式」，板載設定檔可能會蓋掉這裡的 DPI 與回報率。'),
+      h('div', null, h('button', { class: 'btn sm primary', onclick: (e) => guard(e.target, async () => { await d.call(F.ONBOARD_PROFILES, 1, [2]); x.onboardMode = 2; toast('已切換到主機模式'); render(); }) }, '切換到主機模式')))));
+  }
+  const prof = x.onboard?.profile;
+  if (prof?.resolutions?.some(Boolean)) {
+    side.append(h('div', { class: 'group' },
+      h('div', { class: 'label' }, `板載設定檔 ${prof.index}${prof.name ? ' · ' + prof.name : ''}`),
+      h('div', { class: 'okbox' }, prof.resolutions.filter(Boolean).join(' / ') + ' DPI'),
+      h('button', { class: 'btn sm', onclick: () => {
+        prof.resolutions.forEach((v, i) => { x.stages.list[i] = { dpi: v || x.stages.list[i].dpi, on: !!v }; });
+        x.stages.active = Math.min(prof.defaultIndex, 4); x.saveStages(); render(); toast('已匯入板載設定檔的 DPI 檔位');
+      } }, '匯入這組檔位')));
+  }
+  if (x.def) side.append(h('div', { class: 'group' }, h('div', { class: 'label' }, '感測器預設值'), h('div', { class: 'hint' }, `原廠預設 ${x.def} DPI`)));
+
+  if (!x.dpiApi || !x.steps) return [side, h('div', null, h('div', { class: 'stagehead' }, h('h2', null, 'DPI 檔位')), h('p', { class: 'hint' }, '這個裝置沒有提供可調整的 DPI。'))];
+
+  const steps = x.steps, lo = steps[0], hi = steps[steps.length - 1];
+  const nearestIdx = (v) => steps.reduce((bi, s, i) => Math.abs(s - v) < Math.abs(steps[bi] - v) ? i : bi, 0);
+  const readout = h('b', { id: 'dpiReadout' }, x.cur);
+  const applyDpi = async (v) => {
+    await x.dpiApi.set(x.sensor, v);
+    const now = await x.dpiApi.get(x.sensor);
+    Object.assign(x, now);
+    const ro = $('#dpiReadout'); if (ro) ro.textContent = now.cur;
+    log(`DPI 已設為 ${now.cur}`, 'l-ok');
+  };
+  const rows = x.stages.list.map((s, i) => {
+    const active = x.stages.active === i;
+    const row = h('div', { class: `stagerow${active ? ' active' : ''}${s.on ? '' : ' off'}` });
+    const num = h('input', { type: 'number', min: lo, max: hi, value: s.dpi, 'aria-label': `檔位 ${i + 1} DPI`, disabled: !s.on });
+    const range = h('input', { type: 'range', min: 0, max: steps.length - 1, value: nearestIdx(s.dpi), 'aria-label': `檔位 ${i + 1} 滑桿`, disabled: !s.on });
+    const commit = (v) => {
+      v = steps[nearestIdx(v)];
+      s.dpi = v; num.value = v; range.value = nearestIdx(v); x.saveStages();
+      if (x.stages.active === i) guard(null, () => applyDpi(v));
+    };
+    range.oninput = () => { num.value = steps[range.value]; };
+    range.onchange = () => commit(steps[range.value]);
+    num.onchange = () => commit(+num.value);
+    const pick = h('button', { class: 'num', title: '切換到這個檔位', disabled: !s.on, onclick: () => {
+      x.stages.active = i; x.saveStages(); render(); guard(null, () => applyDpi(s.dpi).then(() => toast(`已切換到檔位 ${i + 1}（${s.dpi} DPI）`)));
+    } }, i + 1);
+    const toggle = sw(s.on, (e) => {
+      if (!e.target.checked && active) { e.target.checked = true; toast('使用中的檔位不能停用，請先切換到其他檔位'); return; }
+      s.on = e.target.checked; x.saveStages(); render();
+    });
+    row.append(h('span', { class: 'bar' }), pick, range, num, toggle);
+    return row;
+  });
+
+  const stage = h('div', null,
+    h('div', { class: 'stagehead' }, h('h2', null, 'DPI 檔位'), h('div', { class: 'readout' }, '滑鼠目前', readout, 'DPI')),
+    h('div', { class: 'cols' }, h('span'), h('span', null, '檔位'), h('span', null, `${lo} – ${hi}`), h('span', null, 'DPI'), h('span', null, '啟用')),
+    rows);
+
+  if (x.rate) {
+    const sel = selectOf(x.rate.options.slice().sort((a, b) => b.hz - a.hz).map(o => ({ v: o.v, t: `${o.hz} Hz` })), x.rate.cur,
+      () => guard(sel, async () => { await x.rateApi.set(+sel.value); x.rate.cur = +sel.value; toast(`回報率已設為 ${sel.selectedOptions[0].text}`); log(`回報率 → ${sel.selectedOptions[0].text}`, 'l-ok'); }));
+    stage.append(h('div', { class: 'subsec' }, h('div', { class: 'label' }, d.index === 0xff ? '回報率' : '無線回報率'), sel,
+      h('div', { class: 'hint' }, '越高越即時，但耗電也越多。')));
+  }
+  if (x.dpiApi.hasLod(x.sensor)) {
+    const sel = selectOf(LOD_NAMES.map((t, i) => ({ v: i, t })), x.lod ?? 1,
+      () => guard(sel, async () => { await x.dpiApi.set(x.sensor, x.cur, +sel.value); x.lod = +sel.value; toast(`離地高度已設為「${LOD_NAMES[sel.value]}」`); }));
+    stage.append(h('div', { class: 'subsec' }, h('div', { class: 'label' }, '離地高度 (LOD)'), sel,
+      h('div', { class: 'hint' }, '滑鼠抬離桌面多高時停止追蹤。習慣常拿起滑鼠的人可選「低」。')));
+  }
+  return [side, stage];
+}
+
+// ── 按鍵配置 ──
+function viewButtons(d, x) {
+  const prof = x.onboard?.supported ? x.onboard.profile : null;
+  const btn = (i) => prof?.buttons?.[i] ? describeButton(prof.buttons[i]) : null;
+  const parts = [
+    ['left', '左鍵', 0, '左鍵點擊'], ['right', '右鍵', 1, '右鍵點擊'], ['middle', '中鍵', 2, '中鍵點擊'],
+    ['backbtn', '側鍵（後）', 3, '後退'], ['forward', '側鍵（前）', 4, '前進'],
+  ];
+  let sel = viewButtons.sel || 'left';
+  const labels = {};
+  for (const [k, , i, def] of parts) labels[k] = { title: btn(i) || def, sub: prof ? `按鍵 ${i + 1}` : '' };
+  const box = h('div', { class: 'mousebox' }, mouseCallouts(labels, sel));
+  const side = h('div', null, h('h2', null, '按鍵配置'));
+  if (prof) {
+    side.append(h('p', null, `讀取自板載設定檔 ${prof.index}${prof.name ? '（' + prof.name + '）' : ''}。目前為唯讀檢視。`),
+      h('div', { class: 'btnlist' }, prof.buttons.map((b, i) => {
+        const part = parts.find(p => p[2] === i);
+        return h('button', { class: part && part[0] === sel ? 'on' : '', onclick: () => { if (part) { viewButtons.sel = part[0]; render(); } } },
+          h('span', null, part ? part[1] : `按鍵 ${i + 1}`), h('small', null, describeButton(b)));
+      })),
+      prof.gbuttons.length ? h('div', { class: 'group' }, h('div', { class: 'label' }, 'G-Shift 層'),
+        h('div', { class: 'btnlist' }, prof.gbuttons.map((b, i) => h('button', null, h('span', null, `按鍵 ${i + 1}`), h('small', null, describeButton(b)))))) : null);
+  } else {
+    side.append(h('p', null, '右圖為預設配置。'),
+      h('div', { class: 'warnbox' }, x.onboard
+        ? `這個裝置的板載設定檔格式（版本 ${x.onboard.info.format}）還無法解析，所以讀不到自訂的按鍵配置。`
+        : '這個裝置沒有板載設定檔功能。'));
+  }
+  if (x.controls?.length) {
+    side.append(h('div', { class: 'group' }, h('div', { class: 'label' }, `可程式按鍵（${x.controls.length}）`),
+      h('div', { class: 'btnlist' }, x.controls.map(c => h('button', null, h('span', null, CID_NAMES[c.cid] || `CID 0x${hx(c.cid, 4)}`),
+        h('small', null, [c.flags & 0x10 ? '可重新指派' : '', c.flags & 0x20 ? '可轉送' : ''].filter(Boolean).join('、')))))));
+  }
+  side.append(h('div', { class: 'group' }, h('div', { class: 'hint' }, '修改按鍵需要寫入滑鼠的板載記憶體。寫錯可能讓設定檔失效，所以這個功能還在開發，目前不會寫入任何資料。')));
+  return [side, box];
+}
+
+// ── 滾輪 ──
+function viewWheel(d, x) {
+  const side = h('div', null, h('h2', null, '滾輪'));
+  let any = false;
+  if (x.wheelMode != null) {
+    any = true;
+    const m = x.wheelMode;
+    const apply = (bits) => guard(null, async () => {
+      const next = (x.wheelMode & ~1 & ~bits.mask) | bits.val;  // bit0（轉送給 HID++）永遠清除
+      await d.call(F.HIRES_WHEEL, 2, [next]); x.wheelMode = next; toast('滾輪設定已套用');
+    });
+    side.append(h('div', { class: 'group' },
+      h('div', { class: 'toggle-row' }, '高解析度捲動', sw(!!(m & 2), (e) => apply({ mask: 2, val: e.target.checked ? 2 : 0 }))),
+      h('div', { class: 'hint' }, '每一格切得更細，捲動更平滑。'),
+      h('div', { class: 'toggle-row' }, '反向捲動', sw(!!(m & 4), (e) => apply({ mask: 4, val: e.target.checked ? 4 : 0 })))));
+  }
+  if (x.smart) {
+    any = true;
+    const { fid, r } = x.smart;
+    const setFn = fid === F.SMART_SHIFT_ENH ? 2 : 1;
+    const auto = r[1] > 0 && r[1] < 0xff;
+    const thr = h('input', { type: 'range', min: 1, max: 50, value: auto ? Math.min(r[1], 50) : 10, disabled: !auto });
+    const modeSel = selectOf([{ v: 2, t: '段落感 (Ratchet)' }, { v: 1, t: '自由滾動 (Free-spin)' }], r[0] === 1 ? 1 : 2,
+      () => guard(modeSel, async () => { await d.call(fid, setFn, [+modeSel.value, 0, 0]); r[0] = +modeSel.value; toast('滾輪模式已套用'); }));
+    thr.onchange = () => guard(thr, async () => { await d.call(fid, setFn, [0, +thr.value, 0]); r[1] = +thr.value; toast(`SmartShift 靈敏度：${thr.value}`); });
+    side.append(h('div', { class: 'group' },
+      h('div', { class: 'label' }, 'SmartShift'), modeSel,
+      h('div', { class: 'toggle-row' }, '快速撥動時自動切換', sw(auto, (e) => guard(null, async () => {
+        const v = e.target.checked ? +thr.value : 0xff; await d.call(fid, setFn, [0, v, 0]); r[1] = v; render();
+      }))), thr, h('div', { class: 'hint' }, '數值越小，越容易切換成自由滾動。')));
+  }
+  if (!any) {
+    side.append(h('p', null, '這個裝置沒有提供公開的滾輪設定協定。'),
+      h('div', { class: 'warnbox' }, 'PRO X2 SUPERSTRIKE 的 BHOP 模式使用羅技尚未公開的新協定，目前還無法支援。請到「進階 / HITS」查看偵測到的未知功能。'));
+  }
+  return [side, h('div', { class: 'mousebox' }, mouseCallouts({ middle: { title: '滾輪', sub: '' } }, 'middle'))];
+}
+
+// ── 進階 / HITS ──
+function viewAdv(d, x) {
+  const unknown = d.featList.filter(f => !FEATURE_NAMES[f.id]);
+  const side = h('div', null, h('h2', null, '進階 / HITS'),
+    h('p', null, 'HITS（觸發點、快速觸發、點擊觸覺回饋）與 BHOP 是新款滑鼠才有的功能，羅技沒有公開這些協定。'),
+    h('p', null, '右邊列出這個裝置回報、但目前還不認識的功能。它們很可能就是 HITS 與 BHOP 的控制介面。把這張表傳給開發者，可以協助逆向分析這些協定。'),
+    h('div', { class: 'warnbox' }, '請不要對未知功能送出寫入指令，可能會讓滑鼠進入異常狀態。'));
+  const fid = h('input', { class: 'field mono', value: unknown[0] ? hx(unknown[0].id, 4) : '0001', 'aria-label': 'Feature ID（16 進位）', style: 'width:110px;font-size:15px' });
+  const fn = h('input', { class: 'field mono', type: 'number', min: 0, max: 15, value: 0, 'aria-label': 'Function 編號', style: 'width:80px;font-size:15px' });
+  const params = h('input', { class: 'field mono', value: '', placeholder: '參數，例如 00 01', 'aria-label': '參數', style: 'flex:1;min-width:140px;font-size:15px' });
+  const out = h('pre', { class: 'mono okbox', style: 'margin:10px 0 0;min-height:40px;white-space:pre-wrap' }, '');
+  const stage = h('div', null,
+    h('div', { class: 'stagehead' }, h('h2', null, '未知功能'), h('span', { class: 'readout' }, `${unknown.length} 項`)),
+    unknown.length
+      ? h('div', { class: 'tablewrap' }, h('table', null, h('tr', null, h('th', null, '索引'), h('th', null, 'Feature ID'), h('th', null, '版本'), h('th', null, '旗標')),
+        unknown.map(f => h('tr', null, h('td', { class: 'mono' }, hx(f.index)), h('td', { class: 'mono' }, '0x' + hx(f.id, 4)), h('td', { class: 'mono' }, 'v' + f.version),
+          h('td', null, [f.type & 0x40 ? '隱藏' : '', f.type & 0x20 ? '工程用' : '', f.type & 0x80 ? '已淘汰' : ''].filter(Boolean).join('、'))))))
+      : h('p', { class: 'hint' }, '這個裝置的所有功能都已辨識。'),
+    h('div', { class: 'row', style: 'margin-top:12px' },
+      h('button', { class: 'btn sm', onclick: async (e) => {
+        const text = `${d.name}\n` + d.featList.map(f => `${hx(f.index)} 0x${hx(f.id, 4)} v${f.version} type=${hx(f.type)} ${FEATURE_NAMES[f.id] || '?'}`).join('\n');
+        try { await navigator.clipboard.writeText(text); toast('已複製完整功能清單'); } catch { out.textContent = text; }
+      } }, '複製完整功能清單')),
+    h('div', { class: 'subsec', style: 'max-width:none' },
+      h('div', { class: 'label' }, '送出原始 HID++ 指令（唯讀查詢用）'),
+      h('div', { class: 'row' }, 'Feature', fid, 'Fn', fn, params,
+        h('button', { class: 'btn sm primary', onclick: (e) => guard(e.target, async () => {
+          const id = parseInt(fid.value, 16);
+          const ps = params.value.trim() ? params.value.trim().split(/[\s,]+/).map(v => parseInt(v, 16) & 0xff) : [];
+          if (Number.isNaN(id) || ps.some(Number.isNaN)) throw new Error('格式錯誤，請輸入 16 進位數值');
+          try { out.textContent = bytesHex(await d.call(id, +fn.value, ps)); } catch (err) { out.textContent = '錯誤：' + err.message; }
+        }) }, '送出')),
+      out));
+  return [side, stage];
+}
+
+// ── 裝置資訊 ──
+function viewInfo(d, x) {
+  const rows = [['名稱', d.name], ['類型', DEVICE_TYPES[d.type] ?? '—'], ['協定', 'HID++ ' + d.proto],
+    ['連線', d.index === 0xff ? '直接 (USB / 藍牙)' : `接收器槽位 ${d.index}`],
+    ['USB', `${hidDev.productName} · ${hx(hidDev.productId, 4)}`], ...(x.fw || [])];
+  const cards = [h('div', { class: 'card' }, h('h3', null, '裝置'), h('dl', { class: 'kv' }, rows.map(([k, v]) => [h('dt', null, k), h('dd', null, v)])))];
+  if (x.battery) {
+    const p = x.battery.pct;
+    cards.push(h('div', { class: 'card' }, h('h3', null, '電池'), h('div', { class: 'big' }, x.battery.text),
+      p != null ? h('div', { class: 'meter' }, h('i', { style: `width:${p}%;background:${p <= 15 ? 'var(--err)' : p <= 30 ? 'var(--warn)' : 'var(--ok)'}` })) : null,
+      h('div', { class: 'hint', style: 'margin-top:8px' }, x.battery.extra)));
+  }
+  if (x.onboardMode != null) {
+    const set = (m) => guard(null, async () => { await d.call(F.ONBOARD_PROFILES, 1, [m]); x.onboardMode = (await d.call(F.ONBOARD_PROFILES, 2))[0]; render(); toast(m === 1 ? '已切換到內建記憶體模式' : '已切換到主機模式'); });
+    cards.push(h('div', { class: 'card' }, h('h3', null, '板載設定檔', h('small', null, '0x8100')),
+      h('div', { class: 'seg' }, h('button', { class: x.onboardMode === 1 ? 'on' : '', onclick: () => set(1) }, '內建記憶體'), h('button', { class: x.onboardMode === 2 ? 'on' : '', onclick: () => set(2) }, '主機模式')),
+      h('p', { class: 'hint' }, '內建記憶體：使用存在滑鼠裡的設定，換電腦也一樣。主機模式：由這個網頁（或 G HUB）控制，斷電後會還原。'),
+      x.onboard ? h('div', { class: 'hint' }, `格式 v${x.onboard.info.format} · ${x.onboard.info.count} 組設定檔 · 每組 ${x.onboard.info.size} bytes`) : null));
+  }
+  if (x.hosts) {
+    cards.push(h('div', { class: 'card' }, h('h3', null, 'Easy-Switch', h('small', null, '0x1814')),
+      h('div', { class: 'seg' }, Array.from({ length: x.hosts.n }, (_, i) => h('button', { class: i === x.hosts.cur ? 'on' : '', onclick: async () => {
+        if (i === x.hosts.cur || !confirm(`切換到主機 ${i + 1}？裝置會立即與這台電腦中斷連線。`)) return;
+        try { await d.call(F.CHANGE_HOST, 1, [i], 600); } catch {}
+        toast(`已切換到主機 ${i + 1}`);
+      } }, `主機 ${i + 1}`)))));
+  }
+  cards.push(h('div', { class: 'card wide' }, h('h3', null, `支援的功能（${d.featList.length}）`),
+    h('div', { class: 'tablewrap' }, h('table', null,
+      h('tr', null, h('th', null, '索引'), h('th', null, 'Feature ID'), h('th', null, '名稱'), h('th', null, '版本')),
+      d.featList.map(f => h('tr', null, h('td', { class: 'mono' }, hx(f.index)), h('td', { class: 'mono' }, '0x' + hx(f.id, 4)),
+        h('td', null, FEATURE_NAMES[f.id] || h('span', { class: 'tag' }, '未知')), h('td', { class: 'mono' }, 'v' + f.version)))))));
+  return [null, h('div', { class: 'cards' }, cards)];
 }
 
 // ───────────────────────── 啟動 ─────────────────────────
+render();
 (async () => {
   if (!checkSupport()) return;
-  // 若之前已授權過裝置，自動重新連線
   const granted = (await navigator.hid.getDevices()).filter(d => d.vendorId === LOGI_VID);
   if (granted.length) {
     log(`找到已授權的裝置：${granted[0].productName}，自動連線中…`);
